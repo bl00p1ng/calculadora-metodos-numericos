@@ -373,10 +373,18 @@
              * @returns {number} - Valor de la derivada
              */
             calculateDerivative(func, x) {
-                const h = 0.0001;
-                const f1 = this.evaluateFunction(func, x + h);
-                const f2 = this.evaluateFunction(func, x - h);
-                return (f1 - f2) / (2 * h);
+                const h = 0.0001; // Paso pequeño para la aproximación
+                
+                try {
+                    const f1 = this.evaluateFunction(func, x + h);
+                    const f2 = this.evaluateFunction(func, x - h);
+                    
+                    // Derivada por diferencias centrales
+                    return (f1 - f2) / (2 * h);
+                } catch (error) {
+                    this.logger.error(`Error calculando derivada en x = ${x}: ${error.message}`);
+                    throw new Error('Error al calcular la derivada');
+                }
             }
 
             /**
@@ -394,13 +402,26 @@
                 let x = parseFloat(x0);
                 let iter = 0;
                 this.iterations = [];
+                this.result = null;
+
+                this.logger.info(`Valor inicial: x0 = ${x}`);
+                this.logger.info(`Función f(x) = ${func}`);
                 
                 while (iter < maxIterations) {
-                    const fx = this.evaluateFunction(func, x);
-                    const fpx = this.calculateDerivative(func, x);
+                    let fx, fpx;
                     
+                    try {
+                        fx = this.evaluateFunction(func, x);
+                        fpx = this.calculateDerivative(func, x);
+                    } catch (error) {
+                        this.logger.error(`Error en iteración ${iter + 1}: ${error.message}`);
+                        throw error;
+                    }
+                    
+                    // Verifica que la derivada no sea muy pequeña
                     if (Math.abs(fpx) < 1e-10) {
-                        throw new Error('Derivada muy pequeña, el método puede no converger');
+                        this.logger.error(`Derivada muy pequeña en x = ${x}: f'(x) = ${fpx}`);
+                        throw new Error('La derivada es muy pequeña, el método puede no converger');
                     }
                     
                     const xNext = x - fx / fpx;
@@ -409,18 +430,26 @@
                     this.iterations.push({
                         iteration: iter + 1,
                         x: x,
-                        fx: fx,
-                        fpx: fpx,
-                        xNext: xNext,
+                        'f(x)': fx,
+                        "f'(x)": fpx,
+                        'x_next': xNext,
                         error: error
                     });
                     
                     this.logger.info(`Iteración ${iter + 1}: x = ${x}, f(x) = ${fx}, f'(x) = ${fpx}`);
+                    this.logger.info(`x_next = ${xNext}, error = ${error}`);
                     
-                    if (error < tolerance) {
+                    if (error < tolerance || Math.abs(fx) < tolerance) {
                         this.result = xNext;
                         this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
+                        this.logger.success(`Raíz encontrada: ${xNext}`);
                         break;
+                    }
+                    
+                    // Verifica si el método está divergiendo
+                    if (Math.abs(xNext) > 1e10 || isNaN(xNext)) {
+                        this.logger.error('El método está divergiendo');
+                        throw new Error('El método diverge con el valor inicial dado');
                     }
                     
                     x = xNext;
