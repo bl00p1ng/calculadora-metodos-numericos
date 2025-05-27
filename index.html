@@ -52,6 +52,1265 @@
         </div>
 
         <!-- Scripts -->
-        <script src="js/app.js"></script>
+        <script>
+            /**
+         * Logger centralizado para depuración
+         * Implementa un sistema robusto de logs con diferentes niveles
+         */
+        class Logger {
+            /**
+             * Constructor del logger
+             * Inicializa el contenedor de logs
+             */
+            constructor() {
+                this.logs = [];
+                this.logContainer = null;
+            }
+
+            /**
+             * Establece el contenedor HTML para mostrar los logs
+             * @param {HTMLElement} container - Elemento DOM donde se mostrarán los logs
+             */
+            setContainer(container) {
+                this.logContainer = container;
+            }
+
+            /**
+             * Registra un mensaje con nivel de información
+             * @param {string} message - Mensaje a registrar
+             */
+            info(message) {
+                this._log('info', message);
+            }
+
+            /**
+             * Registra un mensaje de éxito
+             * @param {string} message - Mensaje a registrar
+             */
+            success(message) {
+                this._log('success', message);
+            }
+
+            /**
+             * Registra un mensaje de advertencia
+             * @param {string} message - Mensaje a registrar
+             */
+            warning(message) {
+                this._log('warning', message);
+            }
+
+            /**
+             * Registra un mensaje de error
+             * @param {string} message - Mensaje a registrar
+             */
+            error(message) {
+                this._log('error', message);
+            }
+
+            /**
+             * Método interno para registrar logs
+             * @param {string} level - Nivel del log (info, success, warning, error)
+             * @param {string} message - Mensaje a registrar
+             * @private
+             */
+            _log(level, message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logEntry = {
+                    timestamp,
+                    level,
+                    message
+                };
+                
+                this.logs.push(logEntry);
+                console.log(`[${level.toUpperCase()}] ${timestamp}: ${message}`);
+                
+                if (this.logContainer) {
+                    const logElement = document.createElement('div');
+                    logElement.className = `log-entry ${level}`;
+                    logElement.textContent = `[${timestamp}] ${message}`;
+                    this.logContainer.appendChild(logElement);
+                    this.logContainer.scrollTop = this.logContainer.scrollHeight;
+                }
+            }
+
+            /**
+             * Limpia todos los logs
+             */
+            clear() {
+                this.logs = [];
+                if (this.logContainer) {
+                    this.logContainer.innerHTML = '';
+                }
+            }
+        }
+
+        /**
+         * Clase base para todos los métodos numéricos
+         * Define la interfaz común y funcionalidad compartida
+         */
+        class NumericalMethod {
+            /**
+             * Constructor de la clase base
+             * @param {string} name - Nombre del método numérico
+             * @param {Logger} logger - Instancia del logger para depuración
+             */
+            constructor(name, logger) {
+                this.name = name;
+                this.logger = logger;
+                this.iterations = [];
+                this.result = null;
+            }
+
+            /**
+             * Valida los parámetros de entrada
+             * @param {Object} params - Parámetros a validar
+             * @returns {boolean} - True si los parámetros son válidos
+             */
+            validateParams(params) {
+                this.logger.info(`Validando parámetros para ${this.name}`);
+                return true;
+            }
+
+            /**
+             * Ejecuta el cálculo del método numérico
+             * @param {Object} params - Parámetros del cálculo
+             * @throws {Error} - Debe ser implementado por las subclases
+             */
+            calculate(params) {
+                throw new Error('El método calculate debe ser implementado por la subclase');
+            }
+
+            /**
+             * Obtiene los resultados formateados
+             * @returns {Object} - Resultados del cálculo
+             */
+            getResults() {
+                return {
+                    result: this.result,
+                    iterations: this.iterations
+                };
+            }
+
+            /**
+             * Evalúa una función matemática dada como string
+             * @param {string} func - Función matemática como string
+             * @param {number} x - Valor en el que evaluar la función
+             * @returns {number} - Resultado de la evaluación
+             */
+            evaluateFunction(func, x) {
+                try {
+                    // Reemplaza x en la función y evalúa
+                    const expression = func.replace(/x/g, `(${x})`);
+                    return Function('"use strict"; return (' + expression + ')')();
+                } catch (error) {
+                    this.logger.error(`Error evaluando función: ${error.message}`);
+                    throw new Error('Función inválida');
+                }
+            }
+        }
+
+        /**
+         * Implementación del método de Bisección
+         * Encuentra raíces de funciones continuas en un intervalo
+         */
+        class BisectionMethod extends NumericalMethod {
+            /**
+             * Constructor del método de Bisección
+             * @param {Logger} logger - Instancia del logger
+             */
+            constructor(logger) {
+                super('Bisección', logger);
+            }
+
+            /**
+             * Ejecuta el método de bisección
+             * @param {Object} params - Parámetros del cálculo
+             * @param {string} params.function - Función a evaluar
+             * @param {number} params.a - Límite inferior del intervalo
+             * @param {number} params.b - Límite superior del intervalo
+             * @param {number} params.tolerance - Tolerancia del error
+             * @param {number} params.maxIterations - Máximo número de iteraciones
+             */
+            calculate(params) {
+                this.logger.info('Iniciando cálculo por método de Bisección');
+                const { function: func, a, b, tolerance, maxIterations } = params;
+                
+                let aVal = parseFloat(a);
+                let bVal = parseFloat(b);
+                let iter = 0;
+                
+                // Verifica que f(a) y f(b) tengan signos opuestos
+                const fa = this.evaluateFunction(func, aVal);
+                const fb = this.evaluateFunction(func, bVal);
+                
+                if (fa * fb > 0) {
+                    throw new Error('f(a) y f(b) deben tener signos opuestos');
+                }
+                
+                this.iterations = [];
+                
+                while (iter < maxIterations) {
+                    const c = (aVal + bVal) / 2;
+                    const fc = this.evaluateFunction(func, c);
+                    
+                    this.iterations.push({
+                        iteration: iter + 1,
+                        xOld: [...xOld],
+                        x: [...x],
+                        error: error
+                    });
+                    
+                    this.logger.info(`Iteración ${iter + 1}: error = ${error}`);
+                    
+                    if (error < tolerance) {
+                        this.result = [...x];
+                        this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
+                        break;
+                    }
+                    
+                    iter++;
+                }
+                
+                if (!this.result) {
+                    this.logger.warning('Máximo de iteraciones alcanzado sin convergencia');
+                    this.result = [...x];
+                }
+            }
+        }
+
+        /**
+         * Implementación del método de Punto Fijo
+         * Resuelve ecuaciones de la forma x = g(x)
+         */
+        class FixedPointMethod extends NumericalMethod {
+            /**
+             * Constructor del método de Punto Fijo
+             * @param {Logger} logger - Instancia del logger
+             */
+            constructor(logger) {
+                super('Punto Fijo', logger);
+            }
+
+            /**
+             * Ejecuta el método de punto fijo
+             * @param {Object} params - Parámetros del cálculo
+             * @param {string} params.function - Función g(x) para x = g(x)
+             * @param {number} params.x0 - Valor inicial
+             * @param {number} params.tolerance - Tolerancia del error
+             * @param {number} params.maxIterations - Máximo número de iteraciones
+             */
+            calculate(params) {
+                this.logger.info('Iniciando cálculo por método de Punto Fijo');
+                const { function: func, x0, tolerance, maxIterations } = params;
+                
+                let x = parseFloat(x0);
+                let iter = 0;
+                this.iterations = [];
+                
+                while (iter < maxIterations) {
+                    const xNext = this.evaluateFunction(func, x);
+                    const error = Math.abs(xNext - x);
+                    
+                    this.iterations.push({
+                        iteration: iter + 1,
+                        x: x,
+                        xNext: xNext,
+                        error: error
+                    });
+                    
+                    this.logger.info(`Iteración ${iter + 1}: x = ${x}, g(x) = ${xNext}, error = ${error}`);
+                    
+                    if (error < tolerance) {
+                        this.result = xNext;
+                        this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
+                        break;
+                    }
+                    
+                    x = xNext;
+                    iter++;
+                }
+                
+                if (!this.result) {
+                    this.logger.warning('Máximo de iteraciones alcanzado sin convergencia');
+                    this.result = x;
+                }
+            }
+        }
+
+        /**
+         * Implementación del método de Newton-Raphson
+         * Método de convergencia rápida usando derivadas
+         */
+        class NewtonMethod extends NumericalMethod {
+            /**
+             * Constructor del método de Newton
+             * @param {Logger} logger - Instancia del logger
+             */
+            constructor(logger) {
+                super('Newton-Raphson', logger);
+            }
+
+            /**
+             * Calcula la derivada numérica de una función
+             * @param {string} func - Función a derivar
+             * @param {number} x - Punto donde calcular la derivada
+             * @returns {number} - Valor de la derivada
+             */
+            calculateDerivative(func, x) {
+                const h = 0.0001;
+                const f1 = this.evaluateFunction(func, x + h);
+                const f2 = this.evaluateFunction(func, x - h);
+                return (f1 - f2) / (2 * h);
+            }
+
+            /**
+             * Ejecuta el método de Newton-Raphson
+             * @param {Object} params - Parámetros del cálculo
+             * @param {string} params.function - Función f(x)
+             * @param {number} params.x0 - Valor inicial
+             * @param {number} params.tolerance - Tolerancia del error
+             * @param {number} params.maxIterations - Máximo número de iteraciones
+             */
+            calculate(params) {
+                this.logger.info('Iniciando cálculo por método de Newton-Raphson');
+                const { function: func, x0, tolerance, maxIterations } = params;
+                
+                let x = parseFloat(x0);
+                let iter = 0;
+                this.iterations = [];
+                
+                while (iter < maxIterations) {
+                    const fx = this.evaluateFunction(func, x);
+                    const fpx = this.calculateDerivative(func, x);
+                    
+                    if (Math.abs(fpx) < 1e-10) {
+                        throw new Error('Derivada muy pequeña, el método puede no converger');
+                    }
+                    
+                    const xNext = x - fx / fpx;
+                    const error = Math.abs(xNext - x);
+                    
+                    this.iterations.push({
+                        iteration: iter + 1,
+                        x: x,
+                        fx: fx,
+                        fpx: fpx,
+                        xNext: xNext,
+                        error: error
+                    });
+                    
+                    this.logger.info(`Iteración ${iter + 1}: x = ${x}, f(x) = ${fx}, f'(x) = ${fpx}`);
+                    
+                    if (error < tolerance) {
+                        this.result = xNext;
+                        this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
+                        break;
+                    }
+                    
+                    x = xNext;
+                    iter++;
+                }
+                
+                if (!this.result) {
+                    this.logger.warning('Máximo de iteraciones alcanzado sin convergencia');
+                    this.result = x;
+                }
+            }
+        }
+
+        /**
+         * Implementación del método de Gauss-Jacobi
+         * Resuelve sistemas de ecuaciones lineales iterativamente
+         */
+        class GaussJacobiMethod extends NumericalMethod {
+            /**
+             * Constructor del método de Gauss-Jacobi
+             * @param {Logger} logger - Instancia del logger
+             */
+            constructor(logger) {
+                super('Gauss-Jacobi', logger);
+            }
+
+            /**
+             * Ejecuta el método de Gauss-Jacobi
+             * @param {Object} params - Parámetros del cálculo
+             * @param {Array<Array<number>>} params.matrix - Matriz de coeficientes
+             * @param {Array<number>} params.vector - Vector de términos independientes
+             * @param {Array<number>} params.initialGuess - Vector inicial
+             * @param {number} params.tolerance - Tolerancia del error
+             * @param {number} params.maxIterations - Máximo número de iteraciones
+             */
+            calculate(params) {
+                this.logger.info('Iniciando cálculo por método de Gauss-Jacobi');
+                const { matrix, vector, initialGuess, tolerance, maxIterations } = params;
+                
+                const n = matrix.length;
+                let x = [...initialGuess];
+                let xNew = new Array(n).fill(0);
+                let iter = 0;
+                this.iterations = [];
+                
+                while (iter < maxIterations) {
+                    // Calcula nuevos valores para cada variable
+                    for (let i = 0; i < n; i++) {
+                        let sum = 0;
+                        for (let j = 0; j < n; j++) {
+                            if (i !== j) {
+                                sum += matrix[i][j] * x[j];
+                            }
+                        }
+                        xNew[i] = (vector[i] - sum) / matrix[i][i];
+                    }
+                    
+                    // Calcula el error
+                    let error = 0;
+                    for (let i = 0; i < n; i++) {
+                        error = Math.max(error, Math.abs(xNew[i] - x[i]));
+                    }
+                    
+                    this.iterations.push({
+                        iteration: iter + 1,
+                        x: [...x],
+                        xNew: [...xNew],
+                        error: error
+                    });
+                    
+                    this.logger.info(`Iteración ${iter + 1}: error = ${error}`);
+                    
+                    if (error < tolerance) {
+                        this.result = [...xNew];
+                        this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
+                        break;
+                    }
+                    
+                    x = [...xNew];
+                    iter++;
+                }
+                
+                if (!this.result) {
+                    this.logger.warning('Máximo de iteraciones alcanzado sin convergencia');
+                    this.result = [...xNew];
+                }
+            }
+        }
+
+        /**
+         * Implementación del método de Gauss-Seidel
+         * Versión mejorada del método de Jacobi con convergencia más rápida
+         */
+        class GaussSeidelMethod extends NumericalMethod {
+            /**
+             * Constructor del método de Gauss-Seidel
+             * @param {Logger} logger - Instancia del logger
+             */
+            constructor(logger) {
+                super('Gauss-Seidel', logger);
+            }
+
+            /**
+             * Ejecuta el método de Gauss-Seidel
+             * @param {Object} params - Parámetros del cálculo
+             * @param {Array<Array<number>>} params.matrix - Matriz de coeficientes
+             * @param {Array<number>} params.vector - Vector de términos independientes
+             * @param {Array<number>} params.initialGuess - Vector inicial
+             * @param {number} params.tolerance - Tolerancia del error
+             * @param {number} params.maxIterations - Máximo número de iteraciones
+             */
+            calculate(params) {
+                this.logger.info('Iniciando cálculo por método de Gauss-Seidel');
+                const { matrix, vector, initialGuess, tolerance, maxIterations } = params;
+                
+                const n = matrix.length;
+                let x = [...initialGuess];
+                let xOld = [...x];
+                let iter = 0;
+                this.iterations = [];
+                
+                while (iter < maxIterations) {
+                    xOld = [...x];
+                    
+                    // Calcula nuevos valores usando los valores más recientes
+                    for (let i = 0; i < n; i++) {
+                        let sum = 0;
+                        for (let j = 0; j < n; j++) {
+                            if (i !== j) {
+                                sum += matrix[i][j] * x[j];
+                            }
+                        }
+                        x[i] = (vector[i] - sum) / matrix[i][i];
+                    }
+                    
+                    // Calcula el error
+                    let error = 0;
+                    for (let i = 0; i < n; i++) {
+                        error = Math.max(error, Math.abs(x[i] - xOld[i]));
+                    }
+                    
+                    this.iterations.push({
+                        iteration: iter + 1,
+                        xOld: [...xOld],
+                        x: [...x],
+                        error: error
+                    });
+
+                    this.logger.info(`Iteración ${iter + 1}: error = ${error}`);
+
+                    if (error < tolerance) {
+                        this.result = [...x];
+                        this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
+                        break;
+                    }
+
+                    iter++;
+                }
+            }
+        }
+
+        /**
+         * Implementación de Integración Numérica
+         * Calcula integrales definidas usando métodos numéricos
+         */
+        class NumericalIntegration extends NumericalMethod {
+            /**
+             * Constructor de Integración Numérica
+             * @param {Logger} logger - Instancia del logger
+             */
+            constructor(logger) {
+                super('Integración Numérica', logger);
+            }
+
+            /**
+             * Ejecuta la integración numérica usando el método del trapecio
+             * @param {Object} params - Parámetros del cálculo
+             * @param {string} params.function - Función a integrar
+             * @param {number} params.a - Límite inferior de integración
+             * @param {number} params.b - Límite superior de integración
+             * @param {number} params.n - Número de subdivisiones
+             */
+            calculate(params) {
+                this.logger.info('Iniciando cálculo de integración numérica');
+                const { function: func, a, b, n } = params;
+                
+                const aVal = parseFloat(a);
+                const bVal = parseFloat(b);
+                const nVal = parseInt(n);
+                const h = (bVal - aVal) / nVal;
+                
+                this.iterations = [];
+                let sum = 0;
+                
+                // Calcula la suma usando la regla del trapecio
+                for (let i = 0; i <= nVal; i++) {
+                    const x = aVal + i * h;
+                    const fx = this.evaluateFunction(func, x);
+                    
+                    let weight = 1;
+                    if (i === 0 || i === nVal) {
+                        weight = 0.5;
+                    }
+                    
+                    sum += weight * fx;
+                    
+                    this.iterations.push({
+                        i: i,
+                        x: x,
+                        fx: fx,
+                        weight: weight,
+                        contribution: weight * fx * h
+                    });
+                }
+                
+                this.result = sum * h;
+                this.logger.success(`Integral calculada: ${this.result}`);
+            }
+        }
+
+        /**
+         * Implementación de Diferenciación Numérica
+         * Aproxima derivadas usando diferencias finitas
+         */
+        class NumericalDifferentiation extends NumericalMethod {
+            /**
+             * Constructor de Diferenciación Numérica
+             * @param {Logger} logger - Instancia del logger
+             */
+            constructor(logger) {
+                super('Diferenciación Numérica', logger);
+            }
+
+            /**
+             * Ejecuta la diferenciación numérica
+             * @param {Object} params - Parámetros del cálculo
+             * @param {string} params.function - Función a derivar
+             * @param {number} params.x - Punto donde calcular la derivada
+             * @param {number} params.h - Tamaño del paso
+             * @param {string} params.method - Método a usar (forward, backward, central)
+             */
+            calculate(params) {
+                this.logger.info('Iniciando cálculo de diferenciación numérica');
+                const { function: func, x, h, method } = params;
+                
+                const xVal = parseFloat(x);
+                const hVal = parseFloat(h);
+                
+                this.iterations = [];
+                
+                const fx = this.evaluateFunction(func, xVal);
+                let derivative;
+                
+                switch (method) {
+                    case 'forward':
+                        const fxh = this.evaluateFunction(func, xVal + hVal);
+                        derivative = (fxh - fx) / hVal;
+                        this.iterations.push({
+                            method: 'Diferencias hacia adelante',
+                            x: xVal,
+                            fx: fx,
+                            'x+h': xVal + hVal,
+                            'f(x+h)': fxh,
+                            derivative: derivative
+                        });
+                        break;
+                        
+                    case 'backward':
+                        const fxh2 = this.evaluateFunction(func, xVal - hVal);
+                        derivative = (fx - fxh2) / hVal;
+                        this.iterations.push({
+                            method: 'Diferencias hacia atrás',
+                            x: xVal,
+                            fx: fx,
+                            'x-h': xVal - hVal,
+                            'f(x-h)': fxh2,
+                            derivative: derivative
+                        });
+                        break;
+                        
+                    case 'central':
+                        const fxh3 = this.evaluateFunction(func, xVal + hVal);
+                        const fxh4 = this.evaluateFunction(func, xVal - hVal);
+                        derivative = (fxh3 - fxh4) / (2 * hVal);
+                        this.iterations.push({
+                            method: 'Diferencias centrales',
+                            x: xVal,
+                            'x-h': xVal - hVal,
+                            'f(x-h)': fxh4,
+                            'x+h': xVal + hVal,
+                            'f(x+h)': fxh3,
+                            derivative: derivative
+                        });
+                        break;
+                }
+                
+                this.result = derivative;
+                this.logger.success(`Derivada calculada: ${this.result}`);
+            }
+        }
+
+        /**
+         * Implementación del Polinomio de Lagrange
+         * Realiza interpolación polinomial
+         */
+        class LagrangePolynomial extends NumericalMethod {
+            /**
+             * Constructor del Polinomio de Lagrange
+             * @param {Logger} logger - Instancia del logger
+             */
+            constructor(logger) {
+                super('Polinomio de Lagrange', logger);
+            }
+
+            /**
+             * Calcula el polinomio de Lagrange y evalúa en un punto
+             * @param {Object} params - Parámetros del cálculo
+             * @param {Array<number>} params.xPoints - Valores x de los puntos
+             * @param {Array<number>} params.yPoints - Valores y de los puntos
+             * @param {number} params.xEval - Punto donde evaluar el polinomio
+             */
+            calculate(params) {
+                this.logger.info('Iniciando cálculo del polinomio de Lagrange');
+                const { xPoints, yPoints, xEval } = params;
+                
+                const n = xPoints.length;
+                let result = 0;
+                this.iterations = [];
+                
+                // Calcula cada término de Lagrange
+                for (let i = 0; i < n; i++) {
+                    let li = 1;
+                    let numerator = 1;
+                    let denominator = 1;
+                    
+                    for (let j = 0; j < n; j++) {
+                        if (i !== j) {
+                            numerator *= (xEval - xPoints[j]);
+                            denominator *= (xPoints[i] - xPoints[j]);
+                            li *= (xEval - xPoints[j]) / (xPoints[i] - xPoints[j]);
+                        }
+                    }
+                    
+                    const term = yPoints[i] * li;
+                    result += term;
+                    
+                    this.iterations.push({
+                        i: i,
+                        xi: xPoints[i],
+                        yi: yPoints[i],
+                        li: li,
+                        numerator: numerator,
+                        denominator: denominator,
+                        term: term,
+                        sumPartial: result
+                    });
+                }
+                
+                this.result = result;
+                this.logger.success(`Valor interpolado: ${this.result}`);
+            }
+        }
+
+        /**
+         * Clase principal de la aplicación
+         * Maneja la interfaz de usuario y coordina los métodos numéricos
+         */
+        class NumericalMethodsApp {
+            /**
+             * Constructor de la aplicación
+             */
+            constructor() {
+                this.logger = new Logger();
+                this.currentMethod = null;
+                this.methods = {
+                    bisection: new BisectionMethod(this.logger),
+                    fixedPoint: new FixedPointMethod(this.logger),
+                    newton: new NewtonMethod(this.logger),
+                    gaussJacobi: new GaussJacobiMethod(this.logger),
+                    gaussSeidel: new GaussSeidelMethod(this.logger),
+                    integration: new NumericalIntegration(this.logger),
+                    differentiation: new NumericalDifferentiation(this.logger),
+                    lagrange: new LagrangePolynomial(this.logger)
+                };
+                
+                this.logger.info('Aplicación de métodos numéricos inicializada');
+            }
+
+            /**
+             * Muestra el formulario para un método específico
+             * @param {string} methodName - Nombre del método a mostrar
+             */
+            showMethod(methodName) {
+                this.logger.info(`Mostrando método: ${methodName}`);
+                this.currentMethod = methodName;
+                
+                const menu = document.getElementById('menu');
+                const content = document.getElementById('methodContent');
+                
+                menu.style.display = 'none';
+                content.classList.add('active');
+                
+                // Genera el formulario según el método
+                content.innerHTML = this.generateForm(methodName);
+                
+                // Configura el logger
+                const logsContainer = document.getElementById('logs');
+                if (logsContainer) {
+                    this.logger.setContainer(logsContainer);
+                    this.logger.clear();
+                }
+            }
+
+            /**
+             * Regresa al menú principal
+             */
+            goBack() {
+                this.logger.info('Regresando al menú principal');
+                const menu = document.getElementById('menu');
+                const content = document.getElementById('methodContent');
+                
+                menu.style.display = 'grid';
+                content.classList.remove('active');
+                content.innerHTML = '';
+            }
+
+            /**
+             * Genera el formulario HTML para cada método
+             * @param {string} methodName - Nombre del método
+             * @returns {string} - HTML del formulario
+             */
+            generateForm(methodName) {
+                const forms = {
+                    bisection: `
+                        <button class="back-button" onclick="app.goBack()">← Volver al menú</button>
+                        <h2>Método de Bisección</h2>
+                        
+                        <div class="input-group">
+                            <label for="function">Función f(x):</label>
+                            <input type="text" id="function" placeholder="Ej: x^3 - x - 2" value="x^3 - x - 2">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="a">Límite inferior (a):</label>
+                            <input type="number" id="a" placeholder="Ej: 1" value="1">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="b">Límite superior (b):</label>
+                            <input type="number" id="b" placeholder="Ej: 2" value="2">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="tolerance">Tolerancia:</label>
+                            <input type="number" id="tolerance" placeholder="Ej: 0.0001" value="0.0001">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="maxIterations">Máximo de iteraciones:</label>
+                            <input type="number" id="maxIterations" placeholder="Ej: 100" value="100">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="calculate-button" onclick="app.calculate()">Calcular</button>
+                        </div>
+                        
+                        <div id="results"></div>
+                        <div class="logs" id="logs"></div>
+                    `,
+                    
+                    fixedPoint: `
+                        <button class="back-button" onclick="app.goBack()">← Volver al menú</button>
+                        <h2>Método de Punto Fijo</h2>
+                        
+                        <div class="input-group">
+                            <label for="function">Función g(x) para x = g(x):</label>
+                            <input type="text" id="function" placeholder="Ej: (x + 2)^(1/3)" value="(x + 2)^(1/3)">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="x0">Valor inicial (x₀):</label>
+                            <input type="number" id="x0" placeholder="Ej: 1.5" value="1.5">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="tolerance">Tolerancia:</label>
+                            <input type="number" id="tolerance" placeholder="Ej: 0.0001" value="0.0001">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="maxIterations">Máximo de iteraciones:</label>
+                            <input type="number" id="maxIterations" placeholder="Ej: 100" value="100">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="calculate-button" onclick="app.calculate()">Calcular</button>
+                        </div>
+                        
+                        <div id="results"></div>
+                        <div class="logs" id="logs"></div>
+                    `,
+                    
+                    newton: `
+                        <button class="back-button" onclick="app.goBack()">← Volver al menú</button>
+                        <h2>Método de Newton-Raphson</h2>
+                        
+                        <div class="input-group">
+                            <label for="function">Función f(x):</label>
+                            <input type="text" id="function" placeholder="Ej: x^3 - x - 2" value="x^3 - x - 2">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="x0">Valor inicial (x₀):</label>
+                            <input type="number" id="x0" placeholder="Ej: 1.5" value="1.5">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="tolerance">Tolerancia:</label>
+                            <input type="number" id="tolerance" placeholder="Ej: 0.0001" value="0.0001">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="maxIterations">Máximo de iteraciones:</label>
+                            <input type="number" id="maxIterations" placeholder="Ej: 100" value="100">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="calculate-button" onclick="app.calculate()">Calcular</button>
+                        </div>
+                        
+                        <div id="results"></div>
+                        <div class="logs" id="logs"></div>
+                    `,
+                    
+                    gaussJacobi: `
+                        <button class="back-button" onclick="app.goBack()">← Volver al menú</button>
+                        <h2>Método de Gauss-Jacobi</h2>
+                        
+                        <div class="input-group">
+                            <label for="matrix">Matriz de coeficientes (A):</label>
+                            <textarea id="matrix" rows="4" placeholder="Ej:&#10;4, -1, 0&#10;-1, 4, -1&#10;0, -1, 3">4, -1, 0 -1, 4, -10, -1, 3</textarea>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="vector">Vector de términos independientes (b):</label>
+                            <input type="text" id="vector" placeholder="Ej: 15, 10, 10" value="15, 10, 10">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="initialGuess">Vector inicial:</label>
+                            <input type="text" id="initialGuess" placeholder="Ej: 0, 0, 0" value="0, 0, 0">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="tolerance">Tolerancia:</label>
+                            <input type="number" id="tolerance" placeholder="Ej: 0.0001" value="0.0001">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="maxIterations">Máximo de iteraciones:</label>
+                            <input type="number" id="maxIterations" placeholder="Ej: 100" value="100">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="calculate-button" onclick="app.calculate()">Calcular</button>
+                        </div>
+                        
+                        <div id="results"></div>
+                        <div class="logs" id="logs"></div>
+                    `,
+                    
+                    gaussSeidel: `
+                        <button class="back-button" onclick="app.goBack()">← Volver al menú</button>
+                        <h2>Método de Gauss-Seidel</h2>
+                        
+                        <div class="input-group">
+                            <label for="matrix">Matriz de coeficientes (A):</label>
+                            <textarea id="matrix" rows="4" placeholder="Ej:&#10;4, -1, 0&#10;-1, 4, -1&#10;0, -1, 3">4, -1, 0 -1, 4, -10, -1, 3</textarea>
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="vector">Vector de términos independientes (b):</label>
+                            <input type="text" id="vector" placeholder="Ej: 15, 10, 10" value="15, 10, 10">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="initialGuess">Vector inicial:</label>
+                            <input type="text" id="initialGuess" placeholder="Ej: 0, 0, 0" value="0, 0, 0">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="tolerance">Tolerancia:</label>
+                            <input type="number" id="tolerance" placeholder="Ej: 0.0001" value="0.0001">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="maxIterations">Máximo de iteraciones:</label>
+                            <input type="number" id="maxIterations" placeholder="Ej: 100" value="100">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="calculate-button" onclick="app.calculate()">Calcular</button>
+                        </div>
+                        
+                        <div id="results"></div>
+                        <div class="logs" id="logs"></div>
+                    `,
+                    
+                    integration: `
+                        <button class="back-button" onclick="app.goBack()">← Volver al menú</button>
+                        <h2>Integración Numérica</h2>
+                        
+                        <div class="input-group">
+                            <label for="function">Función f(x):</label>
+                            <input type="text" id="function" placeholder="Ej: x^2" value="x^2">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="a">Límite inferior (a):</label>
+                            <input type="number" id="a" placeholder="Ej: 0" value="0">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="b">Límite superior (b):</label>
+                            <input type="number" id="b" placeholder="Ej: 1" value="1">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="n">Número de subdivisiones (n):</label>
+                            <input type="number" id="n" placeholder="Ej: 100" value="100">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="calculate-button" onclick="app.calculate()">Calcular</button>
+                        </div>
+                        
+                        <div id="results"></div>
+                        <div class="logs" id="logs"></div>
+                    `,
+                    
+                    differentiation: `
+                        <button class="back-button" onclick="app.goBack()">← Volver al menú</button>
+                        <h2>Diferenciación Numérica</h2>
+                        
+                        <div class="input-group">
+                            <label for="function">Función f(x):</label>
+                            <input type="text" id="function" placeholder="Ej: x^2" value="x^2">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="x">Punto x:</label>
+                            <input type="number" id="x" placeholder="Ej: 2" value="2">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="h">Tamaño del paso (h):</label>
+                            <input type="number" id="h" placeholder="Ej: 0.01" value="0.01">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="method">Método:</label>
+                            <select id="method">
+                                <option value="forward">Diferencias hacia adelante</option>
+                                <option value="backward">Diferencias hacia atrás</option>
+                                <option value="central" selected>Diferencias centrales</option>
+                            </select>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="calculate-button" onclick="app.calculate()">Calcular</button>
+                        </div>
+                        
+                        <div id="results"></div>
+                        <div class="logs" id="logs"></div>
+                    `,
+                    
+                    lagrange: `
+                        <button class="back-button" onclick="app.goBack()">← Volver al menú</button>
+                        <h2>Polinomio de Lagrange</h2>
+                        
+                        <div class="input-group">
+                            <label for="xPoints">Valores de x (separados por comas):</label>
+                            <input type="text" id="xPoints" placeholder="Ej: 0, 1, 2, 3" value="0, 1, 2, 3">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="yPoints">Valores de y (separados por comas):</label>
+                            <input type="text" id="yPoints" placeholder="Ej: 1, 2, 5, 10" value="1, 2, 5, 10">
+                        </div>
+                        
+                        <div class="input-group">
+                            <label for="xEval">Punto a evaluar:</label>
+                            <input type="number" id="xEval" placeholder="Ej: 1.5" value="1.5">
+                        </div>
+                        
+                        <div class="button-group">
+                            <button class="calculate-button" onclick="app.calculate()">Calcular</button>
+                        </div>
+                        
+                        <div id="results"></div>
+                        <div class="logs" id="logs"></div>
+                    `
+                };
+                
+                return forms[methodName] || '';
+            }
+
+            /**
+             * Ejecuta el cálculo del método actual
+             */
+            calculate() {
+                this.logger.clear();
+                this.logger.info(`Iniciando cálculo para método: ${this.currentMethod}`);
+                
+                try {
+                    const params = this.getParameters();
+                    const method = this.methods[this.currentMethod];
+                    
+                    // Valida parámetros y ejecuta el cálculo
+                    if (method.validateParams(params)) {
+                        method.calculate(params);
+                        this.displayResults(method.getResults());
+                    }
+                } catch (error) {
+                    this.logger.error(`Error: ${error.message}`);
+                    this.displayError(error.message);
+                }
+            }
+
+            /**
+             * Obtiene los parámetros del formulario actual
+             * @returns {Object} - Parámetros ingresados por el usuario
+             */
+            getParameters() {
+                const params = {};
+                
+                switch (this.currentMethod) {
+                    case 'bisection':
+                        params.function = document.getElementById('function').value;
+                        params.a = document.getElementById('a').value;
+                        params.b = document.getElementById('b').value;
+                        params.tolerance = parseFloat(document.getElementById('tolerance').value);
+                        params.maxIterations = parseInt(document.getElementById('maxIterations').value);
+                        break;
+                        
+                    case 'fixedPoint':
+                    case 'newton':
+                        params.function = document.getElementById('function').value;
+                        params.x0 = document.getElementById('x0').value;
+                        params.tolerance = parseFloat(document.getElementById('tolerance').value);
+                        params.maxIterations = parseInt(document.getElementById('maxIterations').value);
+                        break;
+                        
+                    case 'gaussJacobi':
+                    case 'gaussSeidel':
+                        // Parsea la matriz
+                        const matrixText = document.getElementById('matrix').value;
+                        params.matrix = matrixText.split('\n').map(row => 
+                            row.split(',').map(val => parseFloat(val.trim()))
+                        );
+                        
+                        // Parsea los vectores
+                        params.vector = document.getElementById('vector').value
+                            .split(',').map(val => parseFloat(val.trim()));
+                        params.initialGuess = document.getElementById('initialGuess').value
+                            .split(',').map(val => parseFloat(val.trim()));
+                        
+                        params.tolerance = parseFloat(document.getElementById('tolerance').value);
+                        params.maxIterations = parseInt(document.getElementById('maxIterations').value);
+                        break;
+                        
+                    case 'integration':
+                        params.function = document.getElementById('function').value;
+                        params.a = document.getElementById('a').value;
+                        params.b = document.getElementById('b').value;
+                        params.n = document.getElementById('n').value;
+                        break;
+                        
+                    case 'differentiation':
+                        params.function = document.getElementById('function').value;
+                        params.x = document.getElementById('x').value;
+                        params.h = document.getElementById('h').value;
+                        params.method = document.getElementById('method').value;
+                        break;
+                        
+                    case 'lagrange':
+                        params.xPoints = document.getElementById('xPoints').value
+                            .split(',').map(val => parseFloat(val.trim()));
+                        params.yPoints = document.getElementById('yPoints').value
+                            .split(',').map(val => parseFloat(val.trim()));
+                        params.xEval = parseFloat(document.getElementById('xEval').value);
+                        break;
+                }
+                
+                return params;
+            }
+
+            /**
+             * Muestra los resultados del cálculo
+             * @param {Object} results - Resultados del método numérico
+             */
+            displayResults(results) {
+                const resultsDiv = document.getElementById('results');
+                let html = '<div class="results"><h3>Resultados</h3>';
+                
+                // Muestra el resultado principal
+                if (results.result !== null) {
+                    html += '<div class="result-item">';
+                    if (Array.isArray(results.result)) {
+                        html += '<strong>Solución:</strong><br>';
+                        results.result.forEach((val, i) => {
+                            html += `x${i + 1} = ${val.toFixed(6)}<br>`;
+                        });
+                    } else {
+                        html += `<strong>Resultado:</strong> ${results.result.toFixed(6)}`;
+                    }
+                    html += '</div>';
+                }
+                
+                // Muestra la tabla de iteraciones
+                if (results.iterations && results.iterations.length > 0) {
+                    html += '<h4>Iteraciones</h4>';
+                    html += '<table class="iteration-table">';
+                    
+                    // Genera encabezados dinámicamente
+                    const headers = Object.keys(results.iterations[0]);
+                    html += '<tr>';
+                    headers.forEach(header => {
+                        html += `<th>${this.formatHeader(header)}</th>`;
+                    });
+                    html += '</tr>';
+                    
+                    // Genera las filas
+                    results.iterations.forEach(iter => {
+                        html += '<tr>';
+                        headers.forEach(header => {
+                            const value = iter[header];
+                            if (typeof value === 'number') {
+                                html += `<td>${value.toFixed(6)}</td>`;
+                            } else if (Array.isArray(value)) {
+                                html += `<td>[${value.map(v => v.toFixed(4)).join(', ')}]</td>`;
+                            } else {
+                                html += `<td>${value}</td>`;
+                            }
+                        });
+                        html += '</tr>';
+                    });
+                    
+                    html += '</table>';
+                }
+                
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+            }
+
+            /**
+             * Formatea los encabezados de la tabla
+             * @param {string} header - Nombre del encabezado
+             * @returns {string} - Encabezado formateado
+             */
+            formatHeader(header) {
+                const headerMap = {
+                    'iteration': 'Iteración',
+                    'a': 'a',
+                    'b': 'b',
+                    'c': 'c',
+                    'fc': 'f(c)',
+                    'error': 'Error',
+                    'x': 'x',
+                    'xNext': 'x siguiente',
+                    'fx': 'f(x)',
+                    'fpx': "f'(x)",
+                    'xOld': 'x anterior',
+                    'xi': 'x_i',
+                    'yi': 'y_i',
+                    'li': 'L_i',
+                    'term': 'Término',
+                    'sumPartial': 'Suma parcial',
+                    'weight': 'Peso',
+                    'contribution': 'Contribución',
+                    'derivative': 'Derivada',
+                    'method': 'Método',
+                    'numerator': 'Numerador',
+                    'denominator': 'Denominador'
+                };
+                
+                return headerMap[header] || header;
+            }
+
+            /**
+             * Muestra un mensaje de error
+             * @param {string} message - Mensaje de error a mostrar
+             */
+            displayError(message) {
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = `
+                    <div class="error-message">
+                        <strong>Error:</strong> ${message}
+                    </div>
+                `;
+            }
+
+        }
+
+        // Inicializa la aplicación cuando se carga la página
+        const app = new NumericalMethodsApp();
+        </script>
     </body>
 </html>
