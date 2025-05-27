@@ -240,32 +240,48 @@
                 let iter = 0;
                 
                 // Verifica que f(a) y f(b) tengan signos opuestos
-                const fa = this.evaluateFunction(func, aVal);
-                const fb = this.evaluateFunction(func, bVal);
+                let fa = this.evaluateFunction(func, aVal);
+                let fb = this.evaluateFunction(func, bVal);
+
+                this.logger.info(`f(${aVal}) = ${fa}, f(${bVal}) = ${fb}`);
                 
                 if (fa * fb > 0) {
                     throw new Error('f(a) y f(b) deben tener signos opuestos');
                 }
                 
                 this.iterations = [];
+                this.result = null;
                 
                 while (iter < maxIterations) {
-                    const c = (aVal + bVal) / 2;
-                    const fc = this.evaluateFunction(func, c);
+                    let c = (aVal + bVal) / 2;
+                    let fc = this.evaluateFunction(func, c);
+                    let error = Math.abs(bVal - aVal) / 2;
                     
                     this.iterations.push({
                         iteration: iter + 1,
-                        xOld: [...xOld],
-                        x: [...x],
+                        a: aVal,
+                        b: bVal,
+                        c: c,
+                        fc: fc,
                         error: error
                     });
                     
-                    this.logger.info(`Iteración ${iter + 1}: error = ${error}`);
+                    this.logger.info(`Iteración ${iter + 1}: c = ${c}, f(c) = ${fc}, error = ${error}`);
                     
-                    if (error < tolerance) {
-                        this.result = [...x];
+                    if (Math.abs(fc) < tolerance || error < tolerance) {
+                        this.result = c;
                         this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
+                        this.logger.success(`Raíz encontrada: ${c}`);
                         break;
+                    }
+                    
+                    // Determina el nuevo intervalo
+                    if (fa * fc < 0) {
+                        bVal = c;
+                        fb = fc;
+                    } else {
+                        aVal = c;
+                        fa = fc;
                     }
                     
                     iter++;
@@ -273,7 +289,7 @@
                 
                 if (!this.result) {
                     this.logger.warning('Máximo de iteraciones alcanzado sin convergencia');
-                    this.result = [...x];
+                    this.result = (aVal + bVal) / 2;
                 }
             }
         }
