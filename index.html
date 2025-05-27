@@ -200,8 +200,8 @@
             evaluateFunction(func, x) {
                 try {
                     // Reemplaza x en la función y evalúa
-                    const expression = func.replace(/x/g, `(${x})`);
-                    return Function('"use strict"; return (' + expression + ')')();
+                    const expression = func.replace(/x/g, `(${x})`);  // Reemplaza x por el valor actual
+                    return Function('"use strict"; return (' + expression + ')')();  // Evalúa la expresión
                 } catch (error) {
                     this.logger.error(`Error evaluando función: ${error.message}`);
                     throw new Error('Función inválida');
@@ -239,12 +239,13 @@
                 let bVal = parseFloat(b);
                 let iter = 0;
                 
-                // Verifica que f(a) y f(b) tengan signos opuestos
+                // Verifica que a y b sean válidos
                 let fa = this.evaluateFunction(func, aVal);
                 let fb = this.evaluateFunction(func, bVal);
 
                 this.logger.info(`f(${aVal}) = ${fa}, f(${bVal}) = ${fb}`);
                 
+                // Verifica que los valores iniciales sean válidos
                 if (fa * fb > 0) {
                     throw new Error('f(a) y f(b) deben tener signos opuestos');
                 }
@@ -253,8 +254,13 @@
                 this.result = null;
                 
                 while (iter < maxIterations) {
+                    // Calcula el punto medio del intervalo actual [aVal, bVal]
                     let c = (aVal + bVal) / 2;
+
+                    // Evalúa la función en el punto medio c
                     let fc = this.evaluateFunction(func, c);
+
+                    // Calcula el error actual como la mitad de la longitud del intervalo
                     let error = Math.abs(bVal - aVal) / 2;
                     
                     this.iterations.push({
@@ -268,28 +274,40 @@
                     
                     this.logger.info(`Iteración ${iter + 1}: c = ${c}, f(c) = ${fc}, error = ${error}`);
                     
+                    // Verifica si se cumple el criterio de convergencia:
+                    // Si el valor absoluto de f(c) es menor que la tolerancia (la función se acerca a cero)
+                    // o si el error es menor que la tolerancia (el intervalo es suficientemente pequeño)
                     if (Math.abs(fc) < tolerance || error < tolerance) {
+                        // Guarda el valor de la raíz encontrada
                         this.result = c;
+                        // Registra en los logs que se alcanzó la convergencia y en cuántas iteraciones
                         this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
+                        // Registra en los logs el valor de la raíz encontrada
                         this.logger.success(`Raíz encontrada: ${c}`);
+                        // Sale del ciclo porque ya se encontró la solución
                         break;
                     }
                     
-                    // Determina el nuevo intervalo
+                    // Se evalúa el signo del producto f(a) * f(c) para determinar en qué subintervalo se encuentra la raíz.
+                    // Si el producto es negativo, la función cambia de signo entre a y c ⇨ ahí está la raíz.
+                    // De lo contrario, la raíz está entre c y b.
                     if (fa * fc < 0) {
-                        bVal = c;
-                        fb = fc;
+                        // f(a) y f(c) tienen signos opuestos ⇒ la raíz está en [a, c]
+                        bVal = c;   // Actualizamos el extremo superior del intervalo a c
+                        fb = fc;    // Actualizamos el valor de f(b) con f(c)
                     } else {
-                        aVal = c;
-                        fa = fc;
+                        // f(a) y f(c) tienen el mismo signo ⇒ la raíz está en [c, b]
+                        aVal = c;   // Actualizamos el extremo inferior del intervalo a c
+                        fa = fc;    // Actualizamos el valor de f(a) con f(c)
                     }
-                    
+
+                    // Incrementamos el contador de iteraciones para el próximo ciclo
                     iter++;
                 }
                 
                 if (!this.result) {
                     this.logger.warning('Máximo de iteraciones alcanzado sin convergencia');
-                    this.result = (aVal + bVal) / 2;
+                    this.result = (aVal + bVal) / 2;  // Devuelve el punto medio final como resultado
                 }
             }
         }
@@ -323,26 +341,37 @@
                 let iter = 0;
                 this.iterations = [];
                 
+                // Bucle principal que ejecuta hasta alcanzar las iteraciones máximas
                 while (iter < maxIterations) {
+                    // Evalúa la función g(x) en el punto actual x
                     const xNext = this.evaluateFunction(func, x);
+                    // Calcula el error como la diferencia absoluta entre el nuevo valor y el anterior
                     const error = Math.abs(xNext - x);
                     
+                    // Guarda la información de esta iteración para mostrarla después
                     this.iterations.push({
                         iteration: iter + 1,
-                        x: x,
-                        xNext: xNext,
-                        error: error
+                        x: x,               // Valor actual de x
+                        xNext: xNext,       // Siguiente valor de x (g(x))
+                        error: error        // Error calculado
                     });
                     
+                    // Registra los valores de esta iteración en el log
                     this.logger.info(`Iteración ${iter + 1}: x = ${x}, g(x) = ${xNext}, error = ${error}`);
                     
+                    // Si el error es menor que la tolerancia, se ha encontrado la solución
                     if (error < tolerance) {
+                        // Guarda el resultado final
                         this.result = xNext;
+                        // Registra el éxito en el log
                         this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
+                        // Sale del ciclo porque ya se encontró la solución
                         break;
                     }
                     
+                    // Actualiza x con el nuevo valor para la siguiente iteración
                     x = xNext;
+                    // Incrementa el contador de iteraciones
                     iter++;
                 }
                 
@@ -372,16 +401,29 @@
              * @param {number} x - Punto donde calcular la derivada
              * @returns {number} - Valor de la derivada
              */
+            /**
+             * Calcula la derivada numérica de una función utilizando el método de diferencias centrales
+             * @param {string} func - La función a derivar expresada como string
+             * @param {number} x - El punto donde se desea calcular la derivada
+             * @returns {number} - El valor aproximado de la derivada
+             */
             calculateDerivative(func, x) {
-                const h = 0.0001; // Paso pequeño para la aproximación
+                // Se define un paso pequeño para la aproximación numérica
+                // Un valor muy pequeño mejora la precisión pero puede causar errores de redondeo
+                const h = 0.0001; 
                 
                 try {
+                    // Evalúa la función en el punto x+h
                     const f1 = this.evaluateFunction(func, x + h);
+                    
+                    // Evalúa la función en el punto x-h
                     const f2 = this.evaluateFunction(func, x - h);
                     
-                    // Derivada por diferencias centrales
+                    // Aplica la fórmula de diferencias centrales: f'(x) ≈ [f(x+h) - f(x-h)] / (2h)
+                    // Este método proporciona una aproximación de segundo orden (error proporcional a h²)
                     return (f1 - f2) / (2 * h);
                 } catch (error) {
+                    // Si ocurre algún error durante la evaluación, se registra y se lanza una excepción
                     this.logger.error(`Error calculando derivada en x = ${x}: ${error.message}`);
                     throw new Error('Error al calcular la derivada');
                 }
@@ -411,22 +453,28 @@
                     let fx, fpx;
                     
                     try {
+                        // Evalúa la función y su derivada en el punto actual
                         fx = this.evaluateFunction(func, x);
                         fpx = this.calculateDerivative(func, x);
                     } catch (error) {
+                        // Registra el error si hay problemas al evaluar la función o derivada
                         this.logger.error(`Error en iteración ${iter + 1}: ${error.message}`);
                         throw error;
                     }
                     
-                    // Verifica que la derivada no sea muy pequeña
+                    // Verifica que la derivada no sea cercana a cero para evitar divisiones peligrosas
+                    // Una derivada muy pequeña puede causar problemas de convergencia
                     if (Math.abs(fpx) < 1e-10) {
                         this.logger.error(`Derivada muy pequeña en x = ${x}: f'(x) = ${fpx}`);
                         throw new Error('La derivada es muy pequeña, el método puede no converger');
                     }
                     
+                    // Aplica la fórmula de Newton-Raphson: x_{n+1} = x_n - f(x_n)/f'(x_n)
                     const xNext = x - fx / fpx;
+                    // Calcula el error como la diferencia absoluta entre el valor actual y el nuevo
                     const error = Math.abs(xNext - x);
                     
+                    // Guarda los datos de esta iteración para mostrarlos después
                     this.iterations.push({
                         iteration: iter + 1,
                         x: x,
@@ -436,9 +484,12 @@
                         error: error
                     });
                     
+                    // Registra los valores importantes de la iteración actual
                     this.logger.info(`Iteración ${iter + 1}: x = ${x}, f(x) = ${fx}, f'(x) = ${fpx}`);
                     this.logger.info(`x_next = ${xNext}, error = ${error}`);
                     
+                    // Criterios de convergencia: si el error es menor que la tolerancia
+                    // o si el valor de la función es casi cero, se ha encontrado la raíz
                     if (error < tolerance || Math.abs(fx) < tolerance) {
                         this.result = xNext;
                         this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
@@ -446,13 +497,16 @@
                         break;
                     }
                     
-                    // Verifica si el método está divergiendo
+                    // Verificación de divergencia: valores extremadamente grandes o NaN
+                    // indican que el método está fallando y no convergerá
                     if (Math.abs(xNext) > 1e10 || isNaN(xNext)) {
                         this.logger.error('El método está divergiendo');
                         throw new Error('El método diverge con el valor inicial dado');
                     }
                     
+                    // Actualiza x con el nuevo valor para la siguiente iteración
                     x = xNext;
+                    // Incrementa el contador de iteraciones
                     iter++;
                 }
                 
@@ -489,46 +543,54 @@
                 this.logger.info('Iniciando cálculo por método de Gauss-Jacobi');
                 const { matrix, vector, initialGuess, tolerance, maxIterations } = params;
                 
+                // Obtiene la dimensión del sistema de ecuaciones
                 const n = matrix.length;
+                // Copia el vector inicial para no modificarlo directamente
                 let x = [...initialGuess];
-                // Almacena los nuevos valores de x
+                // Crea un nuevo array para almacenar los valores calculados en cada iteración
                 let xNew = new Array(n).fill(0);
                 let iter = 0;
                 this.iterations = [];
                 
                 while (iter < maxIterations) {
-                    // Calcula nuevos valores para cada variable
+                    // Para cada ecuación del sistema, calcula el nuevo valor de x[i]
                     for (let i = 0; i < n; i++) {
                         let sum = 0;
+                        // Suma todos los términos a[i,j]*x[j] donde j ≠ i
                         for (let j = 0; j < n; j++) {
                             if (i !== j) {
                                 sum += matrix[i][j] * x[j];
                             }
                         }
+                        // Aplica la fórmula de Jacobi: x[i] = (b[i] - suma) / a[i,i]
                         xNew[i] = (vector[i] - sum) / matrix[i][i];
                     }
                     
-                    // Calcula el error
+                    // Calcula el error como la máxima diferencia entre los valores nuevos y anteriores
                     let error = 0;
                     for (let i = 0; i < n; i++) {
                         error = Math.max(error, Math.abs(xNew[i] - x[i]));
                     }
                     
+                    // Guarda la información de esta iteración para visualizarla después
                     this.iterations.push({
                         iteration: iter + 1,
-                        x: [...x],
-                        xNew: [...xNew],
-                        error: error
+                        x: [...x],          // Vector actual
+                        xNew: [...xNew],    // Vector calculado
+                        error: error        // Error máximo
                     });
                     
+                    // Muestra el progreso en el registro de log
                     this.logger.info(`Iteración ${iter + 1}: error = ${error}`);
                     
+                    // Verifica si se alcanzó la convergencia deseada
                     if (error < tolerance) {
                         this.result = [...xNew];
                         this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
                         break;
                     }
                     
+                    // Actualiza el vector x con los nuevos valores calculados para la siguiente iteración
                     x = [...xNew];
                     iter++;
                 }
@@ -566,47 +628,57 @@
                 this.logger.info('Iniciando cálculo por método de Gauss-Seidel');
                 const { matrix, vector, initialGuess, tolerance, maxIterations } = params;
                 
+                // Obtiene la dimensión del sistema de ecuaciones lineales
                 const n = matrix.length;
+                // Crea una copia del vector inicial para comenzar las iteraciones
                 let x = [...initialGuess];
+                // Vector para almacenar valores de la iteración anterior
                 let xOld = [...x];
                 let iter = 0;
                 this.iterations = [];
                 
                 while (iter < maxIterations) {
+                    // Guarda los valores actuales antes de calcular los nuevos
                     xOld = [...x];
                     
-                    // Calcula nuevos valores usando los valores más recientes
+                    // La diferencia clave con Jacobi: se usan valores actualizados inmediatamente
                     for (let i = 0; i < n; i++) {
                         let sum = 0;
                         for (let j = 0; j < n; j++) {
                             if (i !== j) {
+                                // Usa los valores más recientes de x, lo que acelera la convergencia
                                 sum += matrix[i][j] * x[j];
                             }
                         }
+                        // Despeja la incógnita de la ecuación actual
                         x[i] = (vector[i] - sum) / matrix[i][i];
                     }
                     
-                    // Calcula el error
+                    // Calcula el error como la máxima diferencia entre valores nuevos y anteriores
                     let error = 0;
                     for (let i = 0; i < n; i++) {
                         error = Math.max(error, Math.abs(x[i] - xOld[i]));
                     }
                     
+                    // Almacena los datos de esta iteración para mostrarlos después
                     this.iterations.push({
                         iteration: iter + 1,
-                        xOld: [...xOld],
-                        x: [...x],
-                        error: error
+                        xOld: [...xOld],     // Vector de valores anteriores
+                        x: [...x],           // Vector de valores actualizados
+                        error: error         // Error calculado
                     });
 
+                    // Registra el progreso en el log
                     this.logger.info(`Iteración ${iter + 1}: error = ${error}`);
 
+                    // Verifica si se alcanzó la convergencia deseada
                     if (error < tolerance) {
                         this.result = [...x];
                         this.logger.success(`Convergencia alcanzada en ${iter + 1} iteraciones`);
                         break;
                     }
 
+                    // Incrementa el contador de iteraciones
                     iter++;
                 }
             }
@@ -637,32 +709,41 @@
                 this.logger.info('Iniciando cálculo de integración numérica');
                 const { function: func, a, b, n } = params;
                 
+                // Convierte los parámetros a números
                 const aVal = parseFloat(a);
                 const bVal = parseFloat(b);
                 const nVal = parseInt(n);
+                // Calcula el tamaño de cada subintervalo
                 const h = (bVal - aVal) / nVal;
                 
                 this.iterations = [];
                 let sum = 0;
                 
-                // Calcula la suma usando la regla del trapecio
+                // Inicia el proceso de integración numérica usando la regla del trapecio
                 for (let i = 0; i <= nVal; i++) {
+                    // Calcula el punto x actual dentro del intervalo [a,b]
                     const x = aVal + i * h;
+                    // Evalúa la función en el punto x actual
                     const fx = this.evaluateFunction(func, x);
                     
+                    // Determina el peso según la posición:
+                    // - Los puntos extremos (primero y último) tienen peso 0.5
+                    // - Los puntos intermedios tienen peso 1
                     let weight = 1;
                     if (i === 0 || i === nVal) {
                         weight = 0.5;
                     }
                     
+                    // Acumula la suma ponderada para la integración
                     sum += weight * fx;
                     
+                    // Guarda los datos de este punto para mostrarlos en la tabla de resultados
                     this.iterations.push({
-                        i: i,
-                        x: x,
-                        fx: fx,
-                        weight: weight,
-                        contribution: weight * fx * h
+                        i: i,                      // Número de punto
+                        x: x,                      // Valor de x
+                        fx: fx,                    // Valor de f(x)
+                        weight: weight,            // Peso asignado
+                        contribution: weight * fx * h  // Contribución de este punto al resultado final
                     });
                 }
                 
@@ -693,21 +774,30 @@
              * @param {string} params.method - Método a usar (forward, backward, central)
              */
             calculate(params) {
+                // Inicia el proceso de cálculo y registra el evento en el log
                 this.logger.info('Iniciando cálculo de diferenciación numérica');
+                // Extrae los parámetros necesarios usando desestructuración
                 const { function: func, x, h, method } = params;
                 
+                // Convierte los valores de texto a números para asegurar operaciones correctas
                 const xVal = parseFloat(x);
                 const hVal = parseFloat(h);
                 
+                // Inicializa el array que almacenará los datos de las iteraciones
                 this.iterations = [];
                 
+                // Evalúa la función en el punto x inicial
                 const fx = this.evaluateFunction(func, xVal);
                 let derivative;
                 
+                // Dependiendo del método seleccionado, aplica una fórmula diferente
                 switch (method) {
                     case 'forward':
+                        // Método de diferencias hacia adelante: f'(x) ≈ [f(x+h) - f(x)] / h
+                        // El usuario evalúa la función en un punto ligeramente adelante
                         const fxh = this.evaluateFunction(func, xVal + hVal);
                         derivative = (fxh - fx) / hVal;
+                        // Guarda la información de la iteración para mostrarla después
                         this.iterations.push({
                             method: 'Diferencias hacia adelante',
                             x: xVal,
@@ -719,8 +809,11 @@
                         break;
                         
                     case 'backward':
+                        // Método de diferencias hacia atrás: f'(x) ≈ [f(x) - f(x-h)] / h
+                        // El usuario evalúa la función en un punto ligeramente atrás
                         const fxh2 = this.evaluateFunction(func, xVal - hVal);
                         derivative = (fx - fxh2) / hVal;
+                        // Guarda la información de la iteración para mostrarla después
                         this.iterations.push({
                             method: 'Diferencias hacia atrás',
                             x: xVal,
@@ -732,9 +825,12 @@
                         break;
                         
                     case 'central':
+                        // Método de diferencias centrales: f'(x) ≈ [f(x+h) - f(x-h)] / (2h)
+                        // Este método es más preciso porque evalúa la función en ambos lados
                         const fxh3 = this.evaluateFunction(func, xVal + hVal);
                         const fxh4 = this.evaluateFunction(func, xVal - hVal);
                         derivative = (fxh3 - fxh4) / (2 * hVal);
+                        // Guarda la información de la iteración para mostrarla después
                         this.iterations.push({
                             method: 'Diferencias centrales',
                             x: xVal,
@@ -747,7 +843,9 @@
                         break;
                 }
                 
+                // Almacena el resultado final para poder recuperarlo después
                 this.result = derivative;
+                // Registra el éxito de la operación en el log
                 this.logger.success(`Derivada calculada: ${this.result}`);
             }
         }
@@ -776,40 +874,56 @@
                 this.logger.info('Iniciando cálculo del polinomio de Lagrange');
                 const { xPoints, yPoints, xEval } = params;
                 
+                // Se obtiene la cantidad de puntos para interpolar
                 const n = xPoints.length;
+                // Se inicializa el resultado final a 0
                 let result = 0;
+                // Se prepara el arreglo que almacenará los datos de cada iteración
                 this.iterations = [];
                 
-                // Calcula cada término de Lagrange
+                // Se calcula cada término del polinomio de Lagrange
+                // Cada término corresponde a un punto de los datos originales
                 for (let i = 0; i < n; i++) {
+                    // Se inicializa el polinomio base de Lagrange para el punto i
                     let li = 1;
+                    // Variables para guardar el numerador y denominador separadamente (para mostrarlos)
                     let numerator = 1;
                     let denominator = 1;
                     
+                    // Se construye el polinomio base Li(x) multiplicando todos los factores
                     for (let j = 0; j < n; j++) {
+                        // Solo se incluyen términos donde j sea diferente de i
                         if (i !== j) {
+                            // Se calcula el numerador como producto de (x - xj)
                             numerator *= (xEval - xPoints[j]);
+                            // Se calcula el denominador como producto de (xi - xj)
                             denominator *= (xPoints[i] - xPoints[j]);
+                            // Se calcula directamente el polinomio base Li(x)
                             li *= (xEval - xPoints[j]) / (xPoints[i] - xPoints[j]);
                         }
                     }
                     
+                    // Se multiplica el polinomio base por el valor yi correspondiente
                     const term = yPoints[i] * li;
+                    // Se suma al resultado acumulado
                     result += term;
                     
+                    // Se almacena la información de esta iteración para mostrarla en la interfaz
                     this.iterations.push({
-                        i: i,
-                        xi: xPoints[i],
-                        yi: yPoints[i],
-                        li: li,
-                        numerator: numerator,
-                        denominator: denominator,
-                        term: term,
-                        sumPartial: result
+                        i: i,                     // Índice del punto actual
+                        xi: xPoints[i],           // Coordenada x del punto
+                        yi: yPoints[i],           // Coordenada y del punto
+                        li: li,                   // Valor del polinomio base Li(x)
+                        numerator: numerator,     // Numerador calculado
+                        denominator: denominator, // Denominador calculado
+                        term: term,               // Término completo yi*Li(x)
+                        sumPartial: result        // Suma acumulada hasta el momento
                     });
                 }
                 
+                // Se guarda el resultado final de la interpolación
                 this.result = result;
+                // Se registra el éxito de la operación en el log
                 this.logger.success(`Valor interpolado: ${this.result}`);
             }
         }
